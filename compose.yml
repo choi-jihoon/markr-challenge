@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:14
+    container_name: postgres_db
+    environment:
+      POSTGRES_USER: markr_app
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: markr_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  app:
+    build:
+      context: .
+    container_name: markr
+    depends_on:
+      - db
+    environment:
+      DATABASE_URL: ${DATABASE_URL_PRODUCTION}
+    ports:
+      - "8000:8000"
+
+volumes:
+  postgres_data:
