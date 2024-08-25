@@ -41,7 +41,22 @@ def post_test_result():
         obtained_marks=obtained_marks
     )
 
-    db.session.add(result)
+    # check if any information is missing
+
+    # check if it's a rescan
+    existing_result = McqTestResult.query.filter_by(student_number=result.student_number, test_id=result.test_id).first()
+
+    # if the rescan shows a higher score, update existing score in database
+    if existing_result and existing_result.obtained_marks < result.obtained_marks:
+        existing_result.obtained_marks = result.obtained_marks
+        existing_result.available_marks = result.available_marks
+        existing_result.scanned_on = result.scanned_on
+    # if the rescan shows a lower score or no change, do nothing
+    elif existing_result and existing_result.obtained_marks >= result.obtained_marks:
+        return jsonify({"message": "Unnecessary rescan, no update to database"}), 200
+    # if there is no existing score, add result to database
+    else:
+        db.session.add(result)
     db.session.commit()
 
     return jsonify({"message": "Data saved successfully"}), 201

@@ -53,6 +53,32 @@ def valid_xml():
     </mcq-test-results>"""
 
 @pytest.fixture
+def valid_rescan():
+    return """<?xml version="1.0" encoding="UTF-8"?>
+    <mcq-test-results>
+        <mcq-test-result scanned-on="2017-12-04T12:12:10+11:00">
+            <first-name>Virginia</first-name>
+            <last-name>Woolf</last-name>
+            <student-number>123456789</student-number>
+            <test-id>1234</test-id>
+            <summary-marks available="100" obtained="98" />
+        </mcq-test-result>
+    </mcq-test-results>"""
+
+@pytest.fixture
+def invalid_rescan():
+    return """<?xml version="1.0" encoding="UTF-8"?>
+    <mcq-test-results>
+        <mcq-test-result scanned-on="2017-12-04T12:12:10+11:00">
+            <first-name>Virginia</first-name>
+            <last-name>Woolf</last-name>
+            <student-number>123456789</student-number>
+            <test-id>1234</test-id>
+            <summary-marks available="20" obtained="5" />
+        </mcq-test-result>
+    </mcq-test-results>"""
+
+@pytest.fixture
 def invalid_xml():
     return """<?xml version="1.0" encoding="UTF-8"?>
     <mcq-test-results>
@@ -79,6 +105,27 @@ def test_post_test_result_invalid(client, invalid_xml):
     assert response.status_code == 400
     assert json.loads(response.data)['error'] == 'Invalid XML format'
 
+def test_post_valid_rescan(client, valid_rescan):
+    response = client.post('/import', data=valid_rescan, content_type='text/xml')
+    assert response.status_code == 201
+    assert json.loads(response.data)['message'] == 'Data saved successfully'
+
+    # Verify data was updated in the database
+    result = McqTestResult.query.filter_by(student_number='123456789').first()
+    assert result is not None
+    assert result.available_marks == 100
+    assert result.obtained_marks == 98
+
+def test_post_invalid_rescan(client, invalid_rescan):
+    response = client.post('/import', data=invalid_rescan, content_type='text/xml')
+    assert response.status_code == 200
+    assert json.loads(response.data)['message'] == 'Unnecessary rescan, no update to database'
+
+    # Verify data was not changed in the database
+    result = McqTestResult.query.filter_by(student_number='123456789').first()
+    assert result is not None
+    assert result.available_marks == 100
+    assert result.obtained_marks == 80
 
 def test_get_aggregate_with_data(client):
     response = client.get('/results/1234/aggregate')
@@ -90,7 +137,6 @@ def test_get_aggregate_with_data(client):
     assert data["p25"] == 75.0
     assert data["p50"] == 80.0
     assert data["p75"] == 85.0
-
 
 def test_get_aggregate_without_data(client):
     response = client.get('/results/empty_test_id/aggregate')

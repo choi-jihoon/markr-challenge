@@ -6,7 +6,7 @@ services:
     container_name: postgres_db
     environment:
       POSTGRES_USER: markr_app
-      POSTGRES_PASSWORD: password
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: markr_db
     volumes:
       - postgres_data:/var/lib/postgresql/data

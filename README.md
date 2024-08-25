@@ -36,6 +36,7 @@
 
 ```SECRET_KEY=<your_secret_key>```
 ```DATABASE_URL_PRODUCTION=postgresql://<psql_user>:<password>@db:5432/<database>```
+```POSTGRES_PASSWORD=<password>```
 
 3. Build and run on Docker
 
@@ -62,6 +63,8 @@ XML
 ```
 curl http://127.0.0.1:8000/results/1234/aggregate
 ```
+
+Note that the tables in the database will be cleaned up every time the Docker container is restarted. To avoid this, remove running init_db.py from the Dockerfile and initialize the database only if it does not already exist.
 
 
 ## Run unit tests
