@@ -53,6 +53,99 @@ def valid_xml():
     </mcq-test-results>"""
 
 @pytest.fixture
+def invalid_xml():
+    return """<?xml version="1.0" encoding="UTF-8"?>
+    <mcq-test-results>
+        <!-- Missing mcq-test-result element -->
+    </mcq-test-results>"""
+
+@pytest.fixture
+def missing_first_name():
+    return """<?xml version="1.0" encoding="UTF-8"?>
+    <mcq-test-results>
+        <mcq-test-result scanned-on="2017-12-04T12:12:10+11:00">
+            <last-name>Austen</last-name>
+            <student-number>521585128</student-number>
+            <test-id>1234</test-id>
+            <summary-marks available="20" obtained="13" />
+        </mcq-test-result>
+    </mcq-test-results>"""
+
+@pytest.fixture
+def missing_last_name():
+    return """<?xml version="1.0" encoding="UTF-8"?>
+    <mcq-test-results>
+        <mcq-test-result scanned-on="2017-12-04T12:12:10+11:00">
+            <first-name>Jane</first-name>
+            <student-number>521585128</student-number>
+            <test-id>1234</test-id>
+            <summary-marks available="20" obtained="13" />
+        </mcq-test-result>
+    </mcq-test-results>"""
+
+@pytest.fixture
+def missing_student_number():
+    return """<?xml version="1.0" encoding="UTF-8"?>
+    <mcq-test-results>
+        <mcq-test-result scanned-on="2017-12-04T12:12:10+11:00">
+            <first-name>Jane</first-name>
+            <last-name>Austen</last-name>
+            <test-id>1234</test-id>
+            <summary-marks available="20" obtained="13" />
+        </mcq-test-result>
+    </mcq-test-results>"""
+
+@pytest.fixture
+def missing_test_id():
+    return """<?xml version="1.0" encoding="UTF-8"?>
+    <mcq-test-results>
+        <mcq-test-result scanned-on="2017-12-04T12:12:10+11:00">
+            <first-name>Jane</first-name>
+            <last-name>Austen</last-name>
+            <student-number>521585128</student-number>
+            <summary-marks available="20" obtained="13" />
+        </mcq-test-result>
+    </mcq-test-results>"""
+
+@pytest.fixture
+def missing_summary_marks():
+    return """<?xml version="1.0" encoding="UTF-8"?>
+    <mcq-test-results>
+        <mcq-test-result scanned-on="2017-12-04T12:12:10+11:00">
+            <first-name>Jane</first-name>
+            <last-name>Austen</last-name>
+            <student-number>521585128</student-number>
+            <test-id>1234</test-id>
+        </mcq-test-result>
+    </mcq-test-results>"""
+
+@pytest.fixture
+def missing_available_marks():
+    return """<?xml version="1.0" encoding="UTF-8"?>
+    <mcq-test-results>
+        <mcq-test-result scanned-on="2017-12-04T12:12:10+11:00">
+            <first-name>Jane</first-name>
+            <last-name>Austen</last-name>
+            <student-number>521585128</student-number>
+            <test-id>1234</test-id>
+            <summary-marks available="" obtained="13" />
+        </mcq-test-result>
+    </mcq-test-results>"""
+
+@pytest.fixture
+def missing_obtained_marks():
+    return """<?xml version="1.0" encoding="UTF-8"?>
+    <mcq-test-results>
+        <mcq-test-result scanned-on="2017-12-04T12:12:10+11:00">
+            <first-name>Jane</first-name>
+            <last-name>Austen</last-name>
+            <student-number>521585128</student-number>
+            <test-id>1234</test-id>
+            <summary-marks available="20" obtained="" />
+        </mcq-test-result>
+    </mcq-test-results>"""
+
+@pytest.fixture
 def valid_rescan():
     return """<?xml version="1.0" encoding="UTF-8"?>
     <mcq-test-results>
@@ -78,13 +171,6 @@ def invalid_rescan():
         </mcq-test-result>
     </mcq-test-results>"""
 
-@pytest.fixture
-def invalid_xml():
-    return """<?xml version="1.0" encoding="UTF-8"?>
-    <mcq-test-results>
-        <!-- Missing mcq-test-result element -->
-    </mcq-test-results>"""
-
 def test_post_test_result_valid(client, valid_xml):
     response = client.post('/import', data=valid_xml, content_type='text/xml')
     assert response.status_code == 201
@@ -104,6 +190,41 @@ def test_post_test_result_invalid(client, invalid_xml):
     response = client.post('/import', data=invalid_xml, content_type='text/xml')
     assert response.status_code == 400
     assert json.loads(response.data)['error'] == 'Invalid XML format'
+
+def test_post_test_result_missing_first_name(client, missing_first_name):
+    response = client.post('/import', data=missing_first_name, content_type='text/xml')
+    assert response.status_code == 400
+    assert json.loads(response.data)['error'] == "Missing or empty 'first-name'"
+
+def test_post_test_result_missing_last_name(client, missing_last_name):
+    response = client.post('/import', data=missing_last_name, content_type='text/xml')
+    assert response.status_code == 400
+    assert json.loads(response.data)['error'] == "Missing or empty 'last-name'"
+
+def test_post_test_result_missing_student_number(client, missing_student_number):
+    response = client.post('/import', data=missing_student_number, content_type='text/xml')
+    assert response.status_code == 400
+    assert json.loads(response.data)['error'] == "Missing or empty 'student-number'"
+
+def test_post_test_result_missing_test_id(client, missing_test_id):
+    response = client.post('/import', data=missing_test_id, content_type='text/xml')
+    assert response.status_code == 400
+    assert json.loads(response.data)['error'] == "Missing or empty 'test-id'"
+
+def test_post_test_result_missing_summary_marks(client, missing_summary_marks):
+    response = client.post('/import', data=missing_summary_marks, content_type='text/xml')
+    assert response.status_code == 400
+    assert json.loads(response.data)['error'] == "Missing 'summary-marks' element"
+
+def test_post_test_result_missing_available_marks(client, missing_available_marks):
+    response = client.post('/import', data=missing_available_marks, content_type='text/xml')
+    assert response.status_code == 400
+    assert json.loads(response.data)['error'] == "Missing 'available' or 'obtained' attribute in 'summary-marks'"
+
+def test_post_test_result_missing_obtained_marks(client, missing_obtained_marks):
+    response = client.post('/import', data=missing_obtained_marks, content_type='text/xml')
+    assert response.status_code == 400
+    assert json.loads(response.data)['error'] == "Missing 'available' or 'obtained' attribute in 'summary-marks'"
 
 def test_post_valid_rescan(client, valid_rescan):
     response = client.post('/import', data=valid_rescan, content_type='text/xml')

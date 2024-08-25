@@ -4,6 +4,7 @@ import numpy as np
 from datetime import datetime
 from flask import Blueprint, request, jsonify
 from app.models import db, McqTestResult
+from .utils import validate_data, find_percentage
 
 bp = Blueprint("mcq_test_results", __name__, url_prefix="")
 
@@ -17,8 +18,11 @@ def post_test_result():
     root = ET.fromstring(xml_data)
 
     test_result_elem = root.find('mcq-test-result')
-    if test_result_elem is None:
-        return jsonify({"error": "Invalid XML format"}), 400
+
+    # check that no fields are missing
+    error = validate_data(test_result_elem)
+    if error:
+        return error
 
     scanned_on_str = test_result_elem.get('scanned-on')
     scanned_on = datetime.fromisoformat(scanned_on_str)
@@ -40,8 +44,6 @@ def post_test_result():
         available_marks=available_marks,
         obtained_marks=obtained_marks
     )
-
-    # check if any information is missing
 
     # check if it's a rescan
     existing_result = McqTestResult.query.filter_by(student_number=result.student_number, test_id=result.test_id).first()
@@ -87,6 +89,3 @@ def get_aggregate(test_id):
         "p50": p50,
         "p75": p75
     }
-
-def find_percentage(obtained, available):
-    return (obtained / available) * 100.0

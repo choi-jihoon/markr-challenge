@@ -40,6 +40,7 @@
 
 3. Build and run on Docker
 
+```docker compose build```
 ```docker compose up```
 
 4. Example POST
