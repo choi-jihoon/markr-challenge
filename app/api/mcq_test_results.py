@@ -1,4 +1,6 @@
 import xml.etree.ElementTree as ET
+import statistics
+import numpy as np
 from datetime import datetime
 from flask import Blueprint, request, jsonify
 from app.models import db, McqTestResult
@@ -43,3 +45,33 @@ def post_test_result():
     db.session.commit()
 
     return jsonify({"message": "Data saved successfully"}), 201
+
+
+@bp.route("/results/<string:test_id>/aggregate")
+def get_aggregate(test_id):
+    # first get all tests with test_id
+    tests_query = McqTestResult.query.filter(McqTestResult.test_id == test_id).all()
+
+    # validate there's data to aggregate
+    if not tests_query:
+        return jsonify({"message": "No test scores to aggregate."})
+    
+    tests_json = {'tests': [test.to_dict() for test in tests_query]}
+
+    scores = [find_percentage(test['obtained_marks'], test['available_marks']) for test in tests_json['tests']]
+    mean = statistics.mean(scores)
+    count = len(scores)
+    p25 = np.percentile(scores, 25)
+    p50 = np.percentile(scores, 50)
+    p75 = np.percentile(scores, 75)
+
+    return {
+        "mean": mean,
+        "count": count,
+        "p25": p25,
+        "p50": p50,
+        "p75": p75
+    }
+
+def find_percentage(obtained, available):
+    return (obtained / available) * 100.0

@@ -16,7 +16,6 @@ class McqTestResult(db.Model):
     scanned_on = db.Column(db.DateTime)
 
     def to_dict(self):
-        scanned_on = datetime.fromisoformat(self.scanned_on)
 
         return {
             'id': self.id,
@@ -26,5 +25,5 @@ class McqTestResult(db.Model):
             'student_number': self.student_number,
             'available_marks': self.available_marks,
             'obtained_marks': self.obtained_marks,
-            'scanned_on': scanned_on
+            'scanned_on': self.scanned_on
         }

@@ -21,3 +21,7 @@
 
 5. ```pipenv shell```
 6. ```flask run```
+
+
+Run unit tests
+```pytest --log-cli-level=DEBUG --log-cli-format='%(asctime)s - %(levelname)s - %(message)s'```
