@@ -20,6 +20,7 @@ Please see directions below to run locally or on a Docker container.
 2. Create a .env file.
 
 ```SECRET_KEY=<your_secret_key>```
+
 ```DATABASE_URL=postgresql://<psql_user>:<password>@localhost/<database>```
 
 3. Install dependencies.
@@ -44,7 +45,9 @@ Please see directions below to run locally or on a Docker container.
 2. Create a .env file.
 
 ```SECRET_KEY=<your_secret_key>```
+
 ```DATABASE_URL_PRODUCTION=postgresql://<psql_user>:<password>@db:5432/<database>```
+
 ```POSTGRES_PASSWORD=<password>```
 
 3. Build and run on Docker
