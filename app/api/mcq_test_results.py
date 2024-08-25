@@ -8,10 +8,6 @@ from .utils import validate_data, find_percentage
 
 bp = Blueprint("mcq_test_results", __name__, url_prefix="")
 
-@bp.route("/")
-def index():
-    return "Test Results!"
-
 @bp.route("/import", methods=["POST"])
 def post_test_result():
     xml_data = request.data.decode('utf-8')
@@ -89,3 +85,68 @@ def get_aggregate(test_id):
         "p50": p50,
         "p75": p75
     }
+
+# The first POST route only handles one result. This one will process multiple at a time.
+@bp.route("/imports", methods=["POST"])
+def post_test_results():
+    xml_data = request.data.decode('utf-8')
+    root = ET.fromstring(xml_data)
+
+    results = root.findall('mcq-test-result')
+
+    if not results:
+        return jsonify({"error": "No 'mcq-test-result' elements found"}), 400
+
+    processed_count = 0
+    errors = []
+
+    for test_result_elem in results:
+        # Validate each test result
+        error = validate_data(test_result_elem)
+        if error:
+            errors.append(error)
+            continue
+
+        try:
+            scanned_on_str = test_result_elem.get('scanned-on')
+            scanned_on = datetime.fromisoformat(scanned_on_str)
+
+            first_name = test_result_elem.find('first-name').text.strip()
+            last_name = test_result_elem.find('last-name').text.strip()
+            student_number = test_result_elem.find('student-number').text.strip()
+            test_id = test_result_elem.find('test-id').text.strip()
+            summary_marks_elem = test_result_elem.find('summary-marks')
+            available_marks = int(summary_marks_elem.get('available'))
+            obtained_marks = int(summary_marks_elem.get('obtained'))
+
+            existing_result = McqTestResult.query.filter_by(student_number=student_number, test_id=test_id).first()
+
+            if existing_result:
+                if existing_result.obtained_marks < obtained_marks:
+                    existing_result.obtained_marks = obtained_marks
+                    existing_result.available_marks = available_marks
+                    existing_result.scanned_on = scanned_on
+                    db.session.commit()
+                elif existing_result.obtained_marks >= obtained_marks:
+                    errors.append({"message": f"Unnecessary rescan for student_number={student_number}, test_id={test_id}"})
+            else:
+                new_result = McqTestResult(
+                    scanned_on=scanned_on,
+                    first_name=first_name,
+                    last_name=last_name,
+                    student_number=student_number,
+                    test_id=test_id,
+                    available_marks=available_marks,
+                    obtained_marks=obtained_marks
+                )
+                db.session.add(new_result)
+                db.session.commit()
+
+            processed_count += 1
+        except Exception as e:
+            errors.append({"error": str(e)})
+
+    if errors:
+        return jsonify({"processed_count": processed_count, "errors": errors}), 400
+
+    return jsonify({"message": f"Successfully processed {processed_count} results"}), 201
